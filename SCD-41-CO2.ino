@@ -37,16 +37,12 @@
 #include <Wire.h>
 
 
-///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = SECRET_SSID;        // your network SSID (name)
-char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
-
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-const char broker[] = "broker.hivemq.com";
-int        port     = 1883;
-const char topic[]  = "SCD41-CO2-1";
+const char broker[] = "mqtt.cetools.org";
+int        port     = 1884;
+const char topic[]  = "UCL/90TCR/SCD-41";
 
 String clientID;
 
@@ -82,8 +78,7 @@ void setup() {
 
 
     // attempt to connect to Wifi network:
-    Serial.print("Attempting to connect to WPA SSID: ");
-    Serial.println(SECRET_SSID);
+    Serial.print("Attempting to connect to WiFi ");
 
     WiFi.mode(WIFI_STA);
     WiFi.begin(SECRET_SSID, SECRET_PASS);
@@ -103,18 +98,9 @@ void setup() {
     Serial.print("Attempting to connect to the MQTT broker: ");
     Serial.println(broker);
 
-    mqttClient.setServer(broker, 1883);
+    mqttClient.setServer(broker, port);
     clientID = WiFi.macAddress();
-    mqttClient.connect(clientID.c_str());
-    
-    if (mqttClient.connected()) {
-      Serial.println("connected");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(mqttClient.state());
-    }
- 
-
+    mqttClient.setKeepAlive(30000);
 
     Wire.begin();
 
@@ -197,8 +183,11 @@ void loop() {
             char payload[100];
             sprintf(payload, "{\"co2\":%d, \"temperature\":%d, \"humidity\":%d}", co2, int(temperature+0.5), int(humidity+0.5));
           
-            mqttClient.publish(topic, payload);
-            mqttClient.print(payload);
+            boolean result = mqttClient.publish(topic, payload);
+            if(result){
+              Serial.println("Published message");
+            }
+            //mqttClient.print(payload);
       
         }
 
@@ -214,7 +203,7 @@ void reconnect() {
     Serial.print("Attempting MQTT connection...");
     
     // Attempt to connect
-    if (  mqttClient.connect(clientID.c_str() )  ) {
+    if (  mqttClient.connect(clientID.c_str(), MQTT_NAME, MQTT_PASS)  ) {
       Serial.println("connected");
 
     } else {

@@ -34,17 +34,12 @@
 #include <ArduinoJson.h>
 
 
-
-///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = SECRET_SSID;        // your network SSID (name)
-char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
-
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
-const char broker[] = "broker.hivemq.com";
-int        port     = 1883;
-const char topic[]  = "SCD41-CO2-1";
+const char broker[] = "mqtt.cetools.org";
+int        port     = 1884;
+const char topic[]  = "UCL/90TCR/SCD-41";
 
 String clientID;
 
@@ -79,7 +74,7 @@ void setup() {
     Serial.println(WiFi.localIP());
     Serial.println("");
    
-    mqttClient.setServer(broker, 1883);
+    mqttClient.setServer(broker, port);
     mqttClient.setCallback(callback);
     clientID = WiFi.macAddress();
  
@@ -106,7 +101,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println();
 
 
-  StaticJsonDocument <100> doc;
+  StaticJsonDocument<100> doc;
   deserializeJson(doc, payload);
   int co2 = doc["co2"];
   int temperature = doc["temperature"];
@@ -130,7 +125,7 @@ void reconnect() {
     Serial.print("Attempting MQTT connection...");
     
     // Attempt to connect
-    if (  mqttClient.connect(clientID.c_str() )  ) {
+    if (  mqttClient.connect(clientID.c_str(), MQTT_NAME, MQTT_PASS)  ) {
       Serial.println("connected");
       mqttClient.subscribe(topic);
 
